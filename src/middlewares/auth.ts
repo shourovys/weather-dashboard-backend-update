@@ -4,7 +4,6 @@ import ms from 'ms';
 import {
   ACCESS_TOKEN_LIFE,
   ACCESS_TOKEN_SECRET,
-  NODE_ENV,
   REFRESH_TOKEN_LIFE,
   REFRESH_TOKEN_SECRET,
 } from '../config';
@@ -36,7 +35,7 @@ export const generateAuthTokens = async (
     // Set refresh token as HttpOnly cookie (security best practice)
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: !(NODE_ENV === 'development'),
+      secure: process.env.NODE_ENV !== 'development',
       signed: true,
       expires: new Date(Date.now() + ms(REFRESH_TOKEN_LIFE)),
     });
@@ -64,12 +63,12 @@ export const verifyJWT = (
   const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
-    return res.sendStatus(401).json({ message: 'Unauthorized' }); // Unauthorized
+    return res.status(401).json({ message: 'Unauthorized' }); // Unauthorized
   }
 
   jwt.verify(token, ACCESS_TOKEN_SECRET, (err, user) => {
     if (err) {
-      return res.sendStatus(403); // Forbidden
+      return res.status(403).json({ message: 'Forbidden' }); // Sends 403 status with JSON message
     }
     req.user = user as IUser; // Attach user info to request
     req.token = token;

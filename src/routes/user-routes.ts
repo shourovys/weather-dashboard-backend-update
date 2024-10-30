@@ -37,35 +37,33 @@ router.get('/me', verifyJWT, async (req: UserAuthRequest, res: Response) => {
 //  Refresh access token
 router.get('/refreshToken', async (req: Request, res: Response) => {
   try {
-    const { signedCookies = {} } = req;
-    const { refreshToken } = signedCookies;
+    const { signedCookies } = req;
+    const refreshToken = signedCookies?.refreshToken;
 
     if (!refreshToken) {
-      return res.status(402).json({ message: 'No refresh token provided' });
+      return res.status(401).json({ message: 'No refresh token provided' });
     }
 
     // Verify the refresh token
-    jwt.verify(
-      refreshToken,
-      REFRESH_TOKEN_SECRET,
-      async (err: any, decoded: any) => {
-        if (err) {
-          return res.status(403).json({ message: 'Invalid refresh token' });
-        }
-
-        // Generate new access token
-        const accessToken = generateJWT(
-          decoded,
-          ACCESS_TOKEN_SECRET,
-          ACCESS_TOKEN_LIFE
-        );
-
-        return res.status(200).json({
-          user: decoded,
-          token: accessToken,
-        });
+    jwt.verify(refreshToken, REFRESH_TOKEN_SECRET, (err: any, decoded: any) => {
+      if (err) {
+        return res.status(403).json({ message: 'Invalid refresh token' });
       }
-    );
+
+      const { exp, ...payloadWithoutExp } = decoded;
+
+      // Generate new access token
+      const accessToken = generateJWT(
+        payloadWithoutExp,
+        ACCESS_TOKEN_SECRET,
+        ACCESS_TOKEN_LIFE
+      );
+
+      return res.status(200).json({
+        user: payloadWithoutExp,
+        token: accessToken,
+      });
+    });
   } catch (error) {
     console.error('Error refreshing token:', error);
     return res.status(500).json({ message: 'Server error' });

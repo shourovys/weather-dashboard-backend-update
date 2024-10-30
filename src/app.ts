@@ -15,6 +15,7 @@ app.use(
       'http://localhost:5173',
       'https://weather-dashboard-by-shourov.vercel.app',
     ],
+    credentials: true,
   })
 );
 
